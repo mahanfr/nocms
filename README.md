@@ -1,4 +1,4 @@
-# NoCMS - Not Only Contant Management System
+# NoCMS - Not Only Content Management System
 
 Every programmers project at some point but blazing fast also it is not only CMS it
 has stuff that makes it more like [Supabase](https://supabase.com) if i feel like finishing it of course!
