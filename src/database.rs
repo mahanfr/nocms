@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
 use sqlite::Connection;
 
@@ -36,15 +36,16 @@ impl Database {
         }
     }
 
-    pub fn migrate(self,model: impl Model) {
-        let table = model.create_table(); 
-        self.connection.execute(table.create(model.get_name())).unwrap();
+    pub fn migrate(self, model: impl Model) {
+        let table = model.create_table();
+        self.connection
+            .execute(table.create(model.get_name()))
+            .unwrap();
     }
 
     // pub fn insert_model(self, model:impl Model) {
 
     // }
-
 
     fn get_schema(conn: &Connection) -> HashMap<String, Table> {
         let mut _map: HashMap<String, Table> = HashMap::new();
@@ -57,28 +58,36 @@ impl Database {
         .unwrap();
         HashMap::new()
     }
-
 }
 
 // TODO: Create macro for tables
+#[derive(Debug)]
 pub struct Table {
     columns: HashMap<String, ModelValue>,
+    name: String,
 }
 impl Table {
-    pub fn new() -> Self {
+    pub fn new(name: String) -> Self {
         Self {
             columns: HashMap::new(),
+            name
         }
     }
     pub fn add_row(&mut self, name: String, kind: String, properties: Properties) {
         self.columns.insert(name, ModelValue { kind, properties });
     }
-    pub fn create(self, name:String) -> String {
+    pub fn add_row_default(&mut self, name: String, kind: String) {
+        self.columns.insert(name, ModelValue { kind, properties: Properties::default() });
+    }
+    pub fn create(self, name: String) -> String {
         // CREATE TABLE IF NOT EXISTS admin (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, password TEXT)
         let mut quary = String::new();
         quary.push_str(format!("CREATE TABLE IF NOT EXISTS {name} (").as_str());
-        for item in self.columns.iter(){
-            quary.push_str(&format!("{} {} {},", item.0, item.1.kind, item.1.properties))
+        for item in self.columns.iter() {
+            quary.push_str(&format!(
+                "{} {} {},",
+                item.0, item.1.kind, item.1.properties
+            ))
         }
         if quary.ends_with(',') {
             quary.pop();
@@ -88,11 +97,43 @@ impl Table {
     }
 }
 
+// table!{
+//     id: INTEGER PRIMARY KEY AUTOINCRIMENT,
+//     name: TEXT,
+//     email: TEXT,
+//     pasword: TEXT
+// }
+#[macro_export]
+macro_rules! table {(
+    $table_name:ident {
+        $(
+            $field_name:ident : $field_type:ident
+        ),*$(,)+
+    }
+) => {
+        let mut temp_vec = Table::new(stringify!($table_name).to_string());
+        $(
+            temp_vec.add_row_default(stringify!($field_name).to_string(),stringify!($field_type).to_string());
+        )*
+        temp_vec
+    }
+}
+
+pub fn test() -> Table{
+    table!{
+        users{
+            id: INTEGER,
+            name: TEXT,
+        }
+    }
+}
+
 pub trait Model {
     fn create_table(&self) -> Table;
     fn get_name(&self) -> String;
 }
 
+#[derive(Debug)]
 struct ModelValue {
     kind: String,
     properties: String,

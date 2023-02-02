@@ -18,6 +18,7 @@ fn get_superuser_args(args: &Vec<String>) -> Result<(String,String,String),Strin
 async fn main() -> Result<(),Box<dyn Error>>{
     let db = database::Database::new();
     //let db_connection = sqlite::open("db.sqlite3")?;
+    println!("{:?}",database::test());
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {}
     match &args[1].as_str() {

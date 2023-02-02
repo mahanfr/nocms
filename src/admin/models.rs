@@ -68,7 +68,7 @@ impl Admin {
 }
 impl Model for Admin {
     fn create_table(&self) -> Table {
-        let mut table = Table::new();
+        let mut table = Table::new("admin".to_string());
         table.add_row(
             "id".to_string(),
             "INTEGER".to_owned(),
