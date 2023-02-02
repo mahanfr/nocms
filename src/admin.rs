@@ -7,6 +7,8 @@ use hyper::{Body, Request, Response, Server};
 use hyper::service::{make_service_fn, service_fn};
 use crate::utils::get_file;
 
+pub mod models;
+
 async fn admin_service(req: Request<Body>) -> Result<Response<Full<Bytes>>, Infallible> {
     if req.uri() == "/admin" {
         return Ok(
