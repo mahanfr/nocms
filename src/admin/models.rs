@@ -1,4 +1,7 @@
-use crate::database::{Model, Properties, Table};
+use crate::{
+    database::{Model, Table},
+    table,
+};
 // Pasword managment
 use rand::Rng;
 use sha2::{Digest, Sha256};
@@ -28,7 +31,6 @@ fn make_password(password: String) -> String {
 
 #[allow(dead_code)]
 pub struct Admin {
-    id: u32,
     name: String,
     email: String,
     password: String,
@@ -36,59 +38,37 @@ pub struct Admin {
 impl Admin {
     pub fn new(name: String, email: String, password: String) -> Self {
         Self {
-            id: 0,
             name,
             email,
             password: make_password(password),
         }
     }
-    // // TODO: Add Cryptographic hash to password
-    // fn create_user_quary(name: String, email: String, password: String) -> String {
-    //     let mut quary = String::new();
-    //     quary.push_str("INSERT INTO admin ");
-    //     quary.push_str("(name, email, password) ");
-    //     quary.push_str(format!("VALUES ('{name}','{email}','{}');",make_password(password)).as_str());
-    //     quary
-    // }
-
-    // async fn create_superuser(connection : &Connection, name: String, email: String, password: String) {
-    //     // Check if table exists
-    //     let quary = "CREATE TABLE IF NOT EXISTS admin (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, password TEXT)";
-    //     // create table
-    //     connection.execute(quary).unwrap();
-    //     connection.execute( create_user_quary(name, email, password)).unwrap();
-
-    //     connection.iterate("SELECT * FROM admin", |pairs| {
-    //         for &(name, value) in pairs.iter() {
-    //             println!("{} = {}", name, value.unwrap());
-    //         }
-    //         true
-    //     }).unwrap();
-    // }
 }
 impl Model for Admin {
-    fn create_table(&self) -> Table {
-        let mut table = Table::new("admin".to_string());
-        table.add_row(
-            "id".to_string(),
-            "INTEGER".to_owned(),
-            "PRIMARY KEY AUTOINCREMENT".to_owned(),
+    fn insert_query(&self) -> String {
+        let mut quary = String::new();
+        quary.push_str("INSERT INTO admin ");
+        quary.push_str("(name, email, password) ");
+        quary.push_str(
+            format!(
+                "VALUES ('{}','{}','{}');",
+                self.name,
+                self.email,
+                make_password(self.password.to_string())
+            )
+            .as_str(),
         );
-        table.add_row("name".to_string(), "TEXT".to_owned(), Properties::default());
-        table.add_row(
-            "email".to_string(),
-            "TEXT".to_owned(),
-            Properties::default(),
-        );
-        table.add_row(
-            "password".to_string(),
-            "TEXT".to_owned(),
-            Properties::default(),
-        );
-        table
+        quary
     }
-
-    fn get_name(&self) -> String {
-        "admin".to_string()
-    }
+}
+pub fn default_tables() -> Vec<Table> {
+    let mut tables = Vec::<Table>::new();
+    let admin_table = table!(admin {
+        id: "INTEGER PRIMARY KEY AUTOINCREMENT",
+        name: "TEXT",
+        email: "TEXT",
+        password: "TEXT",
+    });
+    tables.push(admin_table);
+    tables
 }

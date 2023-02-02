@@ -11,7 +11,7 @@ $ nocms createsuperuser <username> <email> <password>
 
 run admin server
 ``` bash
-$ nocms run
+$ nocms start
 ```
 
 ## License

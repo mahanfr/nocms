@@ -26,6 +26,7 @@ pub struct Database {
     #[allow(dead_code)]
     map: HashMap<String, Table>,
 }
+#[allow(dead_code)]
 impl Database {
     pub fn new() -> Self {
         let connection = sqlite::open("db.sqlite3").unwrap();
@@ -36,16 +37,23 @@ impl Database {
         }
     }
 
-    pub fn migrate(self, model: impl Model) {
-        let table = model.create_table();
+    pub fn migrate(self, table: Table) {
         self.connection
-            .execute(table.create(model.get_name()))
+            .execute(table.create_insert_query())
             .unwrap();
     }
 
-    // pub fn insert_model(self, model:impl Model) {
+    pub fn insert_one(&self, model: impl Model) {
+        self.connection.execute(model.insert_query()).unwrap();
+    }
 
-    // }
+    pub fn migrate_all(&self, tables: Vec<Table>) {
+        for table in tables {
+            self.connection
+                .execute(table.create_insert_query())
+                .unwrap();
+        }
+    }
 
     fn get_schema(conn: &Connection) -> HashMap<String, Table> {
         let mut _map: HashMap<String, Table> = HashMap::new();
@@ -66,23 +74,30 @@ pub struct Table {
     columns: HashMap<String, ModelValue>,
     name: String,
 }
+#[allow(dead_code)]
 impl Table {
     pub fn new(name: String) -> Self {
         Self {
             columns: HashMap::new(),
-            name
+            name,
         }
     }
     pub fn add_row(&mut self, name: String, kind: String, properties: Properties) {
         self.columns.insert(name, ModelValue { kind, properties });
     }
     pub fn add_row_default(&mut self, name: String, kind: String) {
-        self.columns.insert(name, ModelValue { kind, properties: Properties::default() });
+        self.columns.insert(
+            name,
+            ModelValue {
+                kind,
+                properties: Properties::default(),
+            },
+        );
     }
-    pub fn create(self, name: String) -> String {
+    pub fn create_insert_query(self) -> String {
         // CREATE TABLE IF NOT EXISTS admin (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, email TEXT, password TEXT)
         let mut quary = String::new();
-        quary.push_str(format!("CREATE TABLE IF NOT EXISTS {name} (").as_str());
+        quary.push_str(format!("CREATE TABLE IF NOT EXISTS {} (", self.name).as_str());
         for item in self.columns.iter() {
             quary.push_str(&format!(
                 "{} {} {},",
@@ -97,40 +112,36 @@ impl Table {
     }
 }
 
-// table!{
-//     id: INTEGER PRIMARY KEY AUTOINCRIMENT,
-//     name: TEXT,
-//     email: TEXT,
-//     pasword: TEXT
-// }
+// Creates a table struct based on structure
+/// ```
+/// table!{
+///     id: INTEGER PRIMARY KEY AUTOINCRIMENT,
+///     name: TEXT,
+///     email: TEXT,
+///     pasword: TEXT
+/// }
+/// ```
+/// TODO: make function create model Struct as well and
+/// add table as a unstructed function inside implementaion
 #[macro_export]
 macro_rules! table {(
     $table_name:ident {
         $(
-            $field_name:ident : $field_type:ident
+            $field_name:ident : $atrr:tt
         ),*$(,)+
     }
-) => {
+) => {{
         let mut temp_vec = Table::new(stringify!($table_name).to_string());
         $(
-            temp_vec.add_row_default(stringify!($field_name).to_string(),stringify!($field_type).to_string());
+            temp_vec.add_row_default(stringify!($field_name).to_string(),$atrr.to_string());
         )*
         temp_vec
-    }
-}
-
-pub fn test() -> Table{
-    table!{
-        users{
-            id: INTEGER,
-            name: TEXT,
-        }
-    }
+    }}
 }
 
 pub trait Model {
-    fn create_table(&self) -> Table;
-    fn get_name(&self) -> String;
+    fn insert_query(&self) -> String;
+    // fn get_name(&self) -> String;
 }
 
 #[derive(Debug)]
